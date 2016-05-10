@@ -37,9 +37,10 @@ public class ShapePackerImpl extends Thread implements ShapePacker {
 
     }
 
-//    private void insertShape(Shape shape, int shapeCount) {
-//        allItemsDistribution.put(shapeCount, );
-//    }
+    private void insertShape(Shape shape, int shapeCount) {
+//        ItemsDistribution itemsDistribution = new ItemsDistribution()
+//        allItemsDistribution.put();
+    }
 
     private List<Shape> sortShapesDescendingBySurfaceArea() {
         List<Shape> sortedShapes = new ArrayList<>();

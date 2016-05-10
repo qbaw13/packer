@@ -20,11 +20,3 @@ tasks.xml
 *bin
 *.bin
 *bin
-
-#Maven
-
-# Maven
-.classpath
-.project
-.settings/
-target/
