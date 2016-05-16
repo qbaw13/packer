@@ -30,6 +30,7 @@ public class ShapeCreator {
         return shapes;
     }
 
+    // TODO do it generic
     private static List<Shape> createShapesFromLine(String line) {
         StringTokenizer stringTokenizer = new StringTokenizer(line, "x");
         Double width = Double.parseDouble(stringTokenizer.nextToken());
@@ -38,11 +39,10 @@ public class ShapeCreator {
         if(stringTokenizer.hasMoreTokens()){
             count = Integer.parseInt(stringTokenizer.nextToken());
         }
-        System.out.println(width +" x "+ height +" [x"+count+"]");
-        return createSpecificShapes(width, height, count);
+        return createRectangles(width, height, count);
     }
 
-    private static List<Shape> createSpecificShapes(Double width, Double height, Integer count) {
+    private static List<Shape> createRectangles(Double width, Double height, Integer count) {
         List<Shape> shapes = new ArrayList<>();
         for(int i=0; i<count; i++) {
             shapes.add(new Rectangle(width, height));

@@ -16,6 +16,8 @@ public class Main extends Application {
         loader.setControllerFactory(t -> new MainController(new MainModel()));
 
         stage.setTitle("Packer");
+        stage.setMinHeight(480);
+        stage.setMinWidth(640);
         stage.setScene(new Scene(loader.load()));
         stage.show();
     }
