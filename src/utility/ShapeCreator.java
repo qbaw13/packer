@@ -2,6 +2,7 @@ package utility;
 
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
+import service.Block;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,44 +16,42 @@ import java.util.StringTokenizer;
  */
 public class ShapeCreator {
 
-    public static List<Shape> createShapes(String shapesData) {
-        List<Shape> shapes = new ArrayList<>();
-        BufferedReader bufReader = new BufferedReader(new StringReader(shapesData));
+    public static List<Block> createBlocks(String blocksData) {
+        List<Block> blocks = new ArrayList<>();
+        BufferedReader bufReader = new BufferedReader(new StringReader(blocksData));
         String line = null;
         try {
             while((line = bufReader.readLine()) != null ) {
-                shapes.addAll(createShapesFromLine(line));
+                blocks.addAll(createBlocksFromLine(line));
             }
             bufReader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return shapes;
+        return blocks;
     }
 
-    // TODO do it generic
-    private static List<Shape> createShapesFromLine(String line) {
+    private static List<Block> createBlocksFromLine(String line) {
         StringTokenizer stringTokenizer = new StringTokenizer(line, "x");
-        Double width = Double.parseDouble(stringTokenizer.nextToken());
-        Double height = Double.parseDouble(stringTokenizer.nextToken());
+        int width = Integer.parseInt(stringTokenizer.nextToken());
+        int height = Integer.parseInt(stringTokenizer.nextToken());
         Integer count = 1;
         if(stringTokenizer.hasMoreTokens()){
             count = Integer.parseInt(stringTokenizer.nextToken());
         }
-        return createRectangles(width, height, count);
+        return createBlocks(width, height, count);
     }
 
-    private static List<Shape> createRectangles(Double width, Double height, Integer count) {
-        List<Shape> shapes = new ArrayList<>();
+    private static List<Block> createBlocks(int width, int height, Integer count) {
+        List<Block> blocks = new ArrayList<>();
         for(int i=0; i<count; i++) {
-            shapes.add(new Rectangle(width, height));
+            blocks.add(new Block(width, height));
         }
-        return shapes;
+        return blocks;
     }
 
     public static int countLines(String str) {
-        if(str == null || str.isEmpty())
-        {
+        if(str == null || str.isEmpty()) {
             return 0;
         }
         int lines = 1;

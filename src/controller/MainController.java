@@ -60,8 +60,9 @@ public class MainController {
         initBinScale(anchorPane.getWidth(), anchorPane.getHeight());
         anchorPane.getChildren().add(bin);
 
-//        String shapesData = shapesTextArea.getText();
+        String shapesData = shapesTextArea.getText();
 //        ItemsDistribution bestItemsDistribution = mainModel.packShapes(new Dimension2D(bin.getWidth(), bin.getHeight()), ShapeCreator.createShapes(shapesData));
+        mainModel.packShapes(new Dimension2D(bin.getWidth(), bin.getHeight()), ShapeCreator.createBlocks(shapesData));
 
         addColors(PackResultStub.itemsDistribution.getShapes());
         anchorPane.getChildren().addAll(PackResultStub.itemsDistribution.getShapes());
