@@ -16,12 +16,14 @@
         <menus>
           <Menu mnemonicParsing="false" text="File">
             <items>
+                  <MenuItem mnemonicParsing="false" text="Add tab" />
+                  <MenuItem mnemonicParsing="false" text="Remove tab" />
               <MenuItem mnemonicParsing="false" text="Close" />
             </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Edit">
             <items>
-              <MenuItem mnemonicParsing="false" text="Delete" />
+              <MenuItem mnemonicParsing="false" text="Clear" />
             </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Help">
@@ -70,7 +72,7 @@
                <VBox.margin>
                   <Insets bottom="5.0" />
                </VBox.margin></TextArea>
-            <Label prefHeight="17.0" prefWidth="122.0" text="Bin (WxH): " />
+            <Label prefHeight="17.0" prefWidth="122.0" text="Bin (WxH):  (optional)" />
             <HBox alignment="CENTER_LEFT" prefHeight="15.0" prefWidth="130.0">
                <children>
                   <TextField fx:id="widthBinTextField" prefHeight="25.0" prefWidth="40.0" HBox.hgrow="SOMETIMES" />
