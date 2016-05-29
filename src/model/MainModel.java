@@ -1,7 +1,13 @@
 package model;
 
-import javafx.geometry.Dimension2D;
+import entity.Block;
+import entity.BlocksDistribution;
+import entity.Node;
+import entity.Pair;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import service.*;
+import utility.BlocksFactory;
 
 import java.util.*;
 
@@ -11,26 +17,24 @@ import java.util.*;
  */
 public class MainModel {
 
+    Packer packer;
 
-    public ItemsDistribution packShapes(Dimension2D binSize, List<Block> blocks) {
-//        ShapePackerImpl shapePacker = new ShapePackerImpl();
-//        shapePacker.setBinSize(binSize);
-//        shapePacker.setShapes(shapes);
-//        shapePacker.start();
-//        try {
-//            shapePacker.join();
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        return shapePacker.getBestItemsDistribution();
+    public MainModel() {
+        packer = new Packer();
+    }
 
-        Comparator<Block> comparator = (Block b1, Block b2) -> new Integer(Math.max(b2.getWidth(), b2.getHeight())).compareTo(Math.max(b1.getWidth(), b1.getHeight()));
-        Collections.sort(blocks, comparator);
 
-        Packer packer = new Packer();
-        packer.fit(blocks);
+    public Packer packShapes(List<Block> blocks) {
+        packer = new Packer();
+        packer.setBlocks(blocks);
+        packer.start();
+        return packer;
+    }
 
-        for (int i = 0; i < blocks.size(); i++) { //ustawianie id/kolejno�ci w pd
+    public List<BlocksDistribution> fetchPackedShapes(List<Block> blocks) {
+        List<BlocksDistribution> blocksDistributions = new ArrayList<>();
+
+        for (int i = 0; i < blocks.size(); i++) { //ustawianie id/kolejności w pd
             blocks.get(i).setId(i + 1);
         }
 
@@ -38,16 +42,71 @@ public class MainModel {
         int index = 1;
         for (Node n : minRoots) { //dla kazdego korzenia z minimalna powierzchnia
             Map<Integer, Pair<Integer>> decisions = new HashMap<>();
-            packer.getDecisions(n, decisions); //pobierz ciąg decyzji w pd
-            System.out.println("Min ciąg decyzji nr: " + index);
+            packer.getDecisions(n, decisions);
+            List<Shape> shapes = new ArrayList<>();
+
             for (int j = 1; j <= decisions.size(); j++) { //wypisz decyzje
                 Pair<Integer> decision = decisions.get(j);
-                System.out.println(j + ": (" + blocks.get(j - 1).getWidth() + "," + blocks.get(j - 1).getHeight() + "): " + decision.getFirst() + "," + decision.getSecond());
+                Shape shape = new Rectangle(decision.getFirst(), decision.getSecond(), blocks.get(j - 1).getWidth(), blocks.get(j - 1).getHeight());
+                shapes.add(shape);
             }
+
+            BlocksDistribution blocksDistribution = new BlocksDistribution(shapes);
+            blocksDistributions.add(blocksDistribution);
+
             index++;
         }
 
-        return null;
+        return blocksDistributions;
+    }
 
+    public String fetchDecisions(List<Block> blocks) {
+        StringBuilder s_decisions = new StringBuilder("");
+
+        for (int i = 0; i < blocks.size(); i++) {
+            blocks.get(i).setId(i + 1);
+        }
+
+        s_decisions.append("min pole: " + packer.getMinimumOccupiedArea());
+        s_decisions.append(System.getProperty("line.separator"));
+
+        List<Node> minRoots = packer.findRootsWithMinArea();
+        int index = 1;
+        for (Node n : minRoots) {
+            Map<Integer, Pair<Integer>> decisions = new HashMap<>();
+            packer.getDecisions(n, decisions);
+
+            s_decisions.append("Min ciąg decyzji nr: " + index);
+            s_decisions.append(System.getProperty("line.separator"));
+
+            for (int j = 1; j <= decisions.size(); j++) {
+                Pair<Integer> decision = decisions.get(j);
+                s_decisions.append(j + ": (" + blocks.get(j - 1).getWidth() + "," + blocks.get(j - 1).getHeight() + "): " + decision.getFirst() + "," + decision.getSecond());
+                s_decisions.append(System.getProperty("line.separator"));
+            }
+
+            index++;
+        }
+
+        return s_decisions.toString();
+    }
+
+    public List<Block> getBlocks(String blocksData) {
+        return BlocksFactory.createBlocks(blocksData);
+    }
+
+    public void sortBlocksDescending(List<Block> blocks) {
+        Comparator<Block> comparator = (Block b1, Block b2) -> new Integer(Math.max(b2.getWidth(), b2.getHeight())).compareTo(Math.max(b1.getWidth(), b1.getHeight()));
+        Collections.sort(blocks, comparator);
+    }
+
+    public void stopPacker() {
+        if(packer.isRunning()){
+            packer.cancel();
+        }
+    }
+
+    public boolean checkEnteredBlocks(String text) {
+        return BlocksFactory.checkBlocksCreationPossibility(text);
     }
 }

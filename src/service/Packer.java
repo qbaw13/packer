@@ -1,54 +1,75 @@
 package service;
 
+import entity.Block;
+import entity.Node;
+import entity.Pair;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Upakowuje bloki i przechwuje kolekcję rozwiązań w postaci drzew
  */
-public class Packer {
+public class Packer extends Service<Void>{
 
-    private ArrayList<Node> roots; //korzenie drzew powsta�ych na kolejnych etapach programowanbia dynamicznego
+    private ArrayList<Node> roots; //korzenie drzew powstająych na kolejnych etapach programowanbia dynamicznego
+    private List<Block> blocks;
+    private int minimumOccupiedArea;
+
 
     public Packer() {
-        Node root = new Node(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE); //poczatkowo jeden obszar wolny
+        Node root = initWholeAreaAsEmpty();
         roots = new ArrayList<>();
         roots.add(root);
+        minimumOccupiedArea = 0;
     }
 
-    public void fit(List<Block> blocks) {
-        Block block;
+    private Node initWholeAreaAsEmpty() {
+        return new Node(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
+    }
 
-        for (int n = 0; n < blocks.size(); n++) { //kazdy blok
-            block = blocks.get(n);
-            ArrayList<Node> newRoots = new ArrayList<>(); //nowa kolekcja korzeni (zastąpi roots)
+    @Override
+    protected Task<Void> createTask() {
+        return new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                Block block;
 
-            for (int k = 0; k < roots.size(); k++) { //sprobuj dodac w kazdej z opcji
-                ArrayList<Node> putOptions = new ArrayList<>(); //opcje wlozenia aktualnego bloku w aktualne drzewo
-                findNodes(roots.get(k), block.getWidth(), block.getHeight(), putOptions); //znajdz te opcje
+                for (int n = 0; n < blocks.size(); n++) { //kazdy blok
+                    block = blocks.get(n);
+                    ArrayList<Node> newRoots = new ArrayList<>(); //nowa kolekcja korzeni (zastąpi roots)
 
-                if (!putOptions.isEmpty()) {
-                    for (int l = 0; l < putOptions.size(); l++) { //dla ka�dej z opcji
-                        putBlockInNode(block, putOptions.get(l)); //w aktualnym drzewie zastosuj opcję (ustaw blok w obszarze)
-                        if (l != putOptions.size() - 1) { //w kazdym kroku procz ostatnim
-                            newRoots.add(new Node(roots.get(k))); //kopiuj drzewo z opcja (ustawieniem bloku w obszarze)
-                            unputBlockInNode(putOptions.get(l)); //cofnij zostosowanie opcji
-                        } else { //w ostatnim
-                            newRoots.add(roots.get(k)); //dodaj stare drzewo z now� opcj� (u�ycie starego drzewa - w ostatnim kroku ju� nie trzeba go kopiowa�)
+                    for (int k = 0; k < roots.size(); k++) { //sprobuj dodac w kazdej z opcji
+                        ArrayList<Node> putOptions = new ArrayList<>(); //opcje wlozenia aktualnego bloku w aktualne drzewo
+                        findNodes(roots.get(k), block.getWidth(), block.getHeight(), putOptions); //znajdz te opcje
+
+                        if (!putOptions.isEmpty()) {
+                            for (int l = 0; l < putOptions.size(); l++) { //dla każdej z opcji
+                                putBlockInNode(block, putOptions.get(l)); //w aktualnym drzewie zastosuj opcję (ustaw blok w obszarze)
+                                if (l != putOptions.size() - 1) { //w kazdym kroku procz ostatnim
+                                    newRoots.add(new Node(roots.get(k))); //kopiuj drzewo z opcja (ustawieniem bloku w obszarze)
+                                    removeBlockFromNode(putOptions.get(l)); //cofnij zostosowanie opcji
+                                } else { //w ostatnim
+                                    newRoots.add(roots.get(k)); //dodaj stare drzewo z nową opcją (użycie starego drzewa - w ostatnim kroku już nie trzeba go kopiować)
+                                }
+                            }
+                        } else {
+                            System.out.println("Nie dało się umieścić bloku: (" + block.getHeight() + "," + block.getHeight() + ")");
                         }
                     }
-                } else {
-                    System.out.println("Nie dało się umieścić bloku: (" + block.getHeight() + "," + block.getHeight() + ")");
+
+                    roots.clear(); //wyczysc kolekcje korzeni
+                    roots = newRoots; //nadpisz kolekcję nowych korzeni na miejsce starej
                 }
+                return null;
             }
-
-            roots.clear(); //wyczysc kolekcje korzeni
-            roots = newRoots; //nadpisz kolekcj� nowych korzeni na miejsce starej
-        }
-
+        };
     }
+
+
 
     /**
      * @return Kolekcja korzeni, dla których drzewa (ustawienia bloków) zajmują najmniejszy obszar
@@ -59,7 +80,7 @@ public class Packer {
         Integer minArea = Integer.MAX_VALUE;
 
         for (int i = 0; i < roots.size(); i++) { //dla kazdego z korzeni
-            Integer area = calcArea(roots.get(i)); //oblicz pole zjaetego obszaru jaki generuje drzewo
+            Integer area = calculateOccupiedArea(roots.get(i));
             areas.add(area); //dodaj pole do kolekcji p�l obszar�w
 
             if (area.compareTo(minArea) < 0) minArea = area; //szukanie min obszaru
@@ -71,7 +92,8 @@ public class Packer {
             }
         }
 
-        System.out.println("min pole: " + minArea);
+        minimumOccupiedArea = minArea;
+
 
         return minRoots;
     }
@@ -79,38 +101,46 @@ public class Packer {
     /**
      * Znajduje ciąg decyzji w porgramowniu dynamicznym i zachowuje go w decisions
      *
-     * @param n         węzeł drzewa, z którego chcemy pozyskać decyzje
+     * @param node      węzeł drzewa, z którego chcemy pozyskać decyzje
      * @param decisions HashMap<krok w pd, para(x,y) ustawienia bloku w danym kroku>
      */
-    public void getDecisions(Node n, Map<Integer, Pair<Integer>> decisions) {
-        if (n.isUsed()) {
-            decisions.put(n.getBlock().getId(), new Pair<Integer>(n.getX(), n.getY()));
+    public void getDecisions(Node node, Map<Integer, Pair<Integer>> decisions) {
+        if (node.isUsed()) {
+            decisions.put(node.getBlock().getId(), new Pair<Integer>(node.getX(), node.getY()));
         }
-        if (n.getDown() != null) getDecisions(n.getDown(), decisions);
-        if (n.getRight() != null) getDecisions(n.getRight(), decisions);
+        if (node.getDown() != null) {
+            getDecisions(node.getDown(), decisions);
+        }
+        if (node.getRight() != null) {
+            getDecisions(node.getRight(), decisions);
+        }
+    }
+
+    public void setBlocks(List<Block> blocks) {
+        this.blocks = blocks;
     }
 
     /**
      * @param node Korzeń drzewa obszaru
      * @return Pole jakie generuje obszar zajęty opisany przez drzewo
      */
-    private Integer calcArea(Node node) {
+    private Integer calculateOccupiedArea(Node node) {
         Pair<Integer> maxXmaxY = findMaxXAndY(node, new Pair<Integer>(0, 0));
         return maxXmaxY.getFirst() * maxXmaxY.getSecond();
     }
 
     /**
-     * @param n        węzeł drzewa dla którego znajudemy dwie warto�ci
+     * @param node     węzeł drzewa dla którego znajudemy dwie wartości
      * @param maxXmaxY aktualny wynik (rekursja)
      * @return para(maxX, maxY) maxX - wsp x najbardziej wysuniętego punktu pod względem osi X, maxY - wsp y najbardziej wysuniętego punktu pod względem osi Y
      */
-    private Pair<Integer> findMaxXAndY(Node n, Pair<Integer> maxXmaxY) {
-        if (n.isUsed()) {
-            if (maxXmaxY.getFirst() < n.getX() + n.getBlock().getWidth()) maxXmaxY.setFirst(n.getX() + n.getBlock().getWidth());
-            if (maxXmaxY.getSecond() < n.getY() + n.getBlock().getHeight())
-                maxXmaxY.setSecond(n.getY() + n.getBlock().getHeight());
-            findMaxXAndY(n.getDown(), maxXmaxY);
-            findMaxXAndY(n.getRight(), maxXmaxY);
+    private Pair<Integer> findMaxXAndY(Node node, Pair<Integer> maxXmaxY) {
+        if (node.isUsed()) {
+            if (maxXmaxY.getFirst() < node.getX() + node.getBlock().getWidth()) maxXmaxY.setFirst(node.getX() + node.getBlock().getWidth());
+            if (maxXmaxY.getSecond() < node.getY() + node.getBlock().getHeight())
+                maxXmaxY.setSecond(node.getY() + node.getBlock().getHeight());
+            findMaxXAndY(node.getDown(), maxXmaxY);
+            findMaxXAndY(node.getRight(), maxXmaxY);
         }
 
         return maxXmaxY;
@@ -120,7 +150,7 @@ public class Packer {
     /**
      * Cofnij ustawienie jakiegokolwiek bloku w węźle
      */
-    private void unputBlockInNode(Node node) {
+    private void removeBlockFromNode(Node node) {
         node.setUsed(false);
         node.setBlock(null);
         node.setDown(null);
@@ -155,4 +185,7 @@ public class Packer {
 
     }
 
+    public int getMinimumOccupiedArea() {
+        return minimumOccupiedArea;
+    }
 }

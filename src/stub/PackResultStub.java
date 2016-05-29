@@ -1,9 +1,8 @@
 package stub;
 
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
-import service.ItemsDistribution;
+import entity.BlocksDistribution;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.List;
  */
 public class PackResultStub {
 
-    public static ItemsDistribution itemsDistribution;
+    public static BlocksDistribution blocksDistribution;
 
     static {
         List<Shape> shapes = new ArrayList<>();
@@ -25,6 +24,6 @@ public class PackResultStub {
 //        shapes.add(new Rectangle(100, 100, 100, 100));
 //        shapes.add(new Rectangle(200, 100, 100, 100));
 
-        itemsDistribution = new ItemsDistribution(shapes, null);
+        blocksDistribution = new BlocksDistribution(shapes);
     }
 }

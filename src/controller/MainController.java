@@ -1,24 +1,20 @@
 package controller;
 
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.geometry.Dimension2D;
-import javafx.scene.control.Button;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Path;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import model.MainModel;
-import service.ItemsDistribution;
-import stub.PackResultStub;
-import sun.plugin.javascript.navig.Anchor;
-import utility.ShapeCreator;
+import entity.Block;
+import entity.BlocksDistribution;
+import service.Packer;
+import utility.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,22 +22,19 @@ import java.util.Random;
 
 public class MainController {
 
-    MainModel mainModel;
     @FXML
     TabPane binTabPane;
     @FXML
     TextArea shapesTextArea;
     @FXML
-    TextField widthBinTextField;
-    @FXML
-    TextField heightBinTextField;
-    @FXML
     Button stopButton;
     @FXML
     Button packButton;
-    private Rectangle bin;
-
-
+    @FXML
+    TextArea console;
+    private MainModel mainModel;
+    private List<Rectangle> bins;
+    private Rectangle currentBin;
 
     public MainController(MainModel mainModel) {
         this.mainModel = mainModel;
@@ -49,30 +42,115 @@ public class MainController {
 
     @FXML
     public void initialize() {
+        console.setEditable(false);
     }
 
     @FXML
     public void onPack() {
-        packButton.setDisable(true);
-        stopButton.setDisable(false);
-        AnchorPane anchorPane = (AnchorPane) binTabPane.getSelectionModel().getSelectedItem().getContent();
-        initBin();
-        initBinScale(anchorPane.getWidth(), anchorPane.getHeight());
-        anchorPane.getChildren().add(bin);
 
-        String shapesData = shapesTextArea.getText();
-//        ItemsDistribution bestItemsDistribution = mainModel.packShapes(new Dimension2D(bin.getWidth(), bin.getHeight()), ShapeCreator.createShapes(shapesData));
-        mainModel.packShapes(new Dimension2D(bin.getWidth(), bin.getHeight()), ShapeCreator.createBlocks(shapesData));
+        if(mainModel.checkEnteredBlocks(shapesTextArea.getText())) {
+            setButtonsOnPack();
+            List<Block> blocks = mainModel.getBlocks(shapesTextArea.getText());
+            mainModel.sortBlocksDescending(blocks);
+            Packer packer = mainModel.packShapes(blocks);
 
-        addColors(PackResultStub.itemsDistribution.getShapes());
-        anchorPane.getChildren().addAll(PackResultStub.itemsDistribution.getShapes());
-        scaleShapes(PackResultStub.itemsDistribution.getShapes(), anchorPane.getWidth(), anchorPane.getHeight());
-        addListeners(anchorPane, PackResultStub.itemsDistribution);
+            packer.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+                @Override
+                public void handle(WorkerStateEvent event) {
+                    removeAllTabs();
+                    List<BlocksDistribution> blocksDistributions = mainModel.fetchPackedShapes(blocks);
+                    displayDistributions(blocksDistributions);
+                    displayDecsions(mainModel.fetchDecisions(blocks));
+                    setButtonsOnStopPack();
+                }
+            });
+        }
+        else {
+            displayInformationAlert(Text.WRONG_ENTERED_DATA_TITLE, Text.WRONG_ENTERED_DATA_CONTENT);
+        }
     }
 
-    @FXML void onStop() {
+    @FXML
+    public void onStop() {
+        mainModel.stopPacker();
+        setButtonsOnStopPack();
+    }
+
+    @FXML
+    public void onClear() {
+        removeAllTabs();
+    }
+
+    @FXML
+    public void onClose() {
+        Platform.exit();
+        System.exit(0);
+    }
+
+    private void displayDistributions(List<BlocksDistribution> blocksDistributions) {
+        bins = new ArrayList<>();
+
+        for(int i = 0; i < blocksDistributions.size(); i++) {
+            Tab tab = createTab(i);
+            AnchorPane currentPane = (AnchorPane) tab.getContent();
+            Rectangle bin = createBin(blocksDistributions.get(i).getWidth(), blocksDistributions.get(i).getHeight());
+            scaleBin(bin, tab.getTabPane().getWidth(), tab.getTabPane().getHeight()-20);
+            currentPane.getChildren().add(bin);
+            bins.add(bin);
+            currentBin = bin;
+            prepareBlocks(blocksDistributions.get(i), tab);
+            currentPane.getChildren().addAll(blocksDistributions.get(i).getShapes());
+        }
+    }
+
+    private void displayInformationAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setContentText(content);
+        alert.show();
+    }
+
+    private void displayDecsions(String decisions) {
+        console.clear();
+        console.appendText(decisions);
+    }
+
+    private Tab createTab(int tabNumber) {
+        AnchorPane anchorPane = new AnchorPane();
+        Tab tab = new Tab(Text.SOLUTION + " " + tabNumber, anchorPane);
+        tab.setId(tabNumber + "");
+        binTabPane.getTabs().add(tab);
+
+        return tab;
+    }
+
+    private void prepareBlocks(BlocksDistribution blocksDistribution, Tab tab) {
+        addColors(blocksDistribution.getShapes());
+        scaleShapes(blocksDistribution, tab.getTabPane().getWidth(),  tab.getTabPane().getHeight()-20);
+    }
+
+    private void setButtonsOnPack() {
+        packButton.setDisable(true);
+        stopButton.setDisable(false);
+    }
+
+    private void setButtonsOnStopPack() {
         packButton.setDisable(false);
         stopButton.setDisable(true);
+    }
+
+    private Rectangle createBin(double width, double height) {
+        Rectangle bin = new Rectangle(width, height);
+        bin.setFill(Color.WHITE);
+        bin.setStroke(Color.DARKGREY);
+        return bin;
+    }
+
+    private void scaleBin(Rectangle bin, double width, double height) {
+        double scaleX = width / bin.getWidth();
+        double scaleY = height / bin.getHeight();
+        scaleRectangleSides(bin, Math.min(scaleX, scaleY));
+        centerBinInPane(bin, width, height);
     }
 
     private void addColors(List<Shape> shapes) {
@@ -86,110 +164,26 @@ public class MainController {
         }
     }
 
-    private void initBin() {
-        double width = Double.parseDouble(widthBinTextField.getCharacters().toString());
-        double height = Double.parseDouble(heightBinTextField.getCharacters().toString());
-        bin = new Rectangle(width, height);
-        bin.setFill(Color.WHITE);
-        bin.setStroke(Color.DARKGREY);
-    }
+    private void scaleShapes(BlocksDistribution blocksDistribution, double paneWidth, double paneHeight) {
+        double scaleX = paneWidth / blocksDistribution.getWidth();
+        double scaleY = paneHeight / blocksDistribution.getHeight();
 
-    private void initBinScale(double paneWidth, double paneHeight) {
-        double scaleX = paneWidth / bin.getWidth();
-        double scaleY = paneHeight / bin.getHeight();
-        scaleRectangleSides(Math.min(scaleX, scaleY), bin);
-        centerBinInPane(paneWidth, paneHeight);
-    }
-
-    private void addListeners(Pane pane, ItemsDistribution itemsDistribution) {
-        ChangeListener<Number> listenerX = new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                transformX(itemsDistribution.getShapes(), pane.getWidth(), pane.getHeight());
-            }
-        };
-
-        ChangeListener<Number> listenerY = new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                transformY(itemsDistribution.getShapes(), pane.getWidth(), pane.getHeight());
-            }
-        };
-
-        pane.getScene().widthProperty().addListener(listenerX);
-        pane.getScene().heightProperty().addListener(listenerY);
-    }
-
-    private void scaleShapes(List<Shape> shapes, double paneWidth, double paneHeight) {
-        Double width = Double.parseDouble(widthBinTextField.getCharacters().toString());
-        Double height = Double.parseDouble(heightBinTextField.getCharacters().toString());
-
-        double scaleX = paneWidth / width;
-        double scaleY = paneHeight / height;
-
-        for(Shape shape : shapes) {
+        for(Shape shape : blocksDistribution.getShapes()) {
             if(shape instanceof Rectangle) {
-                scaleRectangleSides(Math.min(scaleX, scaleY), (Rectangle) shape);
+                scaleRectangleSides((Rectangle) shape, Math.min(scaleX, scaleY));
                 scaleRectangleCoordinates(Math.min(scaleX, scaleY), (Rectangle) shape);
-                ((Rectangle) shape).setX(((Rectangle) shape).getX() + bin.getX());
-                ((Rectangle) shape).setY(((Rectangle) shape).getY() + bin.getY());
+                ((Rectangle) shape).setX(((Rectangle) shape).getX() + currentBin.getX());
+                ((Rectangle) shape).setY(((Rectangle) shape).getY() + currentBin.getY());
             }
         }
     }
 
-    private void transformX(List<Shape> shapes, double paneWidth, double paneHeight) {
-        double scaleX = paneWidth / bin.getWidth();
-        double scaleY = paneHeight / bin.getHeight();
-
-        if(scaleX < scaleY) {
-            for(Shape shape : shapes) {
-                if(shape instanceof Rectangle) {
-                    scaleRectangleSides(scaleX, (Rectangle) shape);
-                    scaleRectangleCoordinates(scaleX, (Rectangle) shape);
-                }
-            }
-            scaleRectangleSides(scaleX, bin);
-            scaleRectangleCoordinates(scaleX, bin);
-        }
-
-        centerShapesInBin(shapes, paneWidth, paneHeight);
-        centerBinInPane(paneWidth, paneHeight);
-    }
-
-    private void transformY(List<Shape> shapes, double paneWidth, double paneHeight) {
-        double scaleX = paneWidth / bin.getWidth();
-        double scaleY = paneHeight / bin.getHeight();
-
-        if(scaleY < scaleX) {
-            for(Shape shape : shapes) {
-                if(shape instanceof Rectangle) {
-                    scaleRectangleSides(scaleY, (Rectangle) shape);
-                    scaleRectangleCoordinates(scaleY, (Rectangle) shape);
-                }
-            }
-            scaleRectangleSides(scaleY, bin);
-            scaleRectangleCoordinates(scaleY, bin);
-        }
-
-        centerShapesInBin(shapes, paneWidth, paneHeight);
-        centerBinInPane(paneWidth, paneHeight);
-    }
-
-    private void centerBinInPane(double paneWidth, double paneHeight) {
+    private void centerBinInPane(Rectangle bin, double paneWidth, double paneHeight) {
         bin.setX(paneWidth/2 - bin.getWidth()/2);
         bin.setY(paneHeight/2 - bin.getHeight()/2);
     }
 
-    private void centerShapesInBin(List<Shape> shapes, double paneWidth, double paneHeight) {
-        double binShiftX = (paneWidth/2 - bin.getWidth()/2) - bin.getX();
-        double binShiftY = (paneHeight/2 - bin.getHeight()/2) - bin.getY();
-        for(Shape shape : shapes) {
-            ((Rectangle) shape).setX(((Rectangle) shape).getX() + binShiftX);
-            ((Rectangle) shape).setY(((Rectangle) shape).getY() + binShiftY);
-        }
-    }
-
-    private void scaleRectangleSides(double scale, Rectangle shape) {
+    private void scaleRectangleSides(Rectangle shape, double scale) {
         shape.setWidth(shape.getWidth() * scale);
         shape.setHeight(shape.getHeight() * scale);
     }
@@ -199,4 +193,7 @@ public class MainController {
         shape.setY(shape.getY() * scale);
     }
 
+    private void removeAllTabs() {
+        binTabPane.getTabs().clear();
+    }
 }

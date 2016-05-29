@@ -1,4 +1,4 @@
-package service;
+package entity;
 
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
@@ -9,28 +9,18 @@ import java.util.List;
 /**
  * Created by Kuba on 01.05.2016.
  */
-public class ItemsDistribution {
+public class BlocksDistribution {
 
     List<Shape> shapes;
-    ItemsDistribution previousDistribution;
     Double width;
     Double height;
 
-    public ItemsDistribution(List<Shape> shapes, ItemsDistribution previousDistribution) {
+    public BlocksDistribution(List<Shape> shapes) {
         this.shapes = shapes;
-        this.previousDistribution = previousDistribution;
         initHeight();
         initWidth();
 
     }
-
-    public ItemsDistribution(List<Shape> shapes, ItemsDistribution previousDistribution, Double width, Double height) {
-        this.shapes = shapes;
-        this.previousDistribution = previousDistribution;
-        this.width = width;
-        this.height = height;
-    }
-
     private void initWidth() {
         Double furthestX = 0d;
         for(Shape distributedShape : shapes) {
@@ -61,31 +51,15 @@ public class ItemsDistribution {
         return shapes;
     }
 
-    public ItemsDistribution getPreviousDistribution() {
-        return previousDistribution;
-    }
-
-    public void setPreviousDistribution(ItemsDistribution previousDistribution) {
-        this.previousDistribution = previousDistribution;
-    }
-
     public Double getWidth() {
         return width;
-    }
-
-    public void setWidth(Double width) {
-        this.width = width;
     }
 
     public Double getHeight() {
         return height;
     }
 
-    public void setHeight(Double height) {
-        this.height = height;
-    }
-
-    public List<Shape> shapesDeepCopy() {
+    public List<Shape> blocksDeepCopy() {
         List<Shape> copiedShapes = new ArrayList<>();
         for(Shape shape : shapes) {
             Shape copiedShape = null;

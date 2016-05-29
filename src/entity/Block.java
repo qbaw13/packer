@@ -1,4 +1,4 @@
-package service;
+package entity;
 
 public class Block {
     private int width;

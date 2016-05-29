@@ -1,4 +1,4 @@
-package service;
+package entity;
 
 public class Pair<T> {
     T first;
@@ -7,9 +7,9 @@ public class Pair<T> {
     public Pair() {
     }
 
-    public Pair(T f, T s) {
-        first = f;
-        second = s;
+    public Pair(T first, T second) {
+        this.first = first;
+        this.second = second;
     }
 
     public T getFirst() {

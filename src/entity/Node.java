@@ -1,4 +1,4 @@
-package service;
+package entity;
 
 /**
  * Węzeł drzewa konstuowanego w algorytmie ustawiania bloków na płaszczyźnie
