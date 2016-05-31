@@ -38,7 +38,7 @@ public class MainModel {
             blocks.get(i).setId(i + 1);
         }
 
-        List<Node> minRoots = packer.findRootsWithMinArea();
+        List<Node> minRoots = packer.findRootsWithMinArea(blocks.size());
         int index = 1;
         for (Node n : minRoots) { //dla kazdego korzenia z minimalna powierzchnia
             Map<Integer, Pair<Integer>> decisions = new HashMap<>();
@@ -67,16 +67,16 @@ public class MainModel {
             blocks.get(i).setId(i + 1);
         }
 
-        s_decisions.append("min pole: " + packer.getMinimumOccupiedArea());
+        s_decisions.append("Min occupied area: " + packer.getMinimumOccupiedArea());
         s_decisions.append(System.getProperty("line.separator"));
 
-        List<Node> minRoots = packer.findRootsWithMinArea();
+        List<Node> minRoots = packer.findRootsWithMinArea(blocks.size());
         int index = 1;
         for (Node n : minRoots) {
             Map<Integer, Pair<Integer>> decisions = new HashMap<>();
             packer.getDecisions(n, decisions);
 
-            s_decisions.append("Min ciąg decyzji nr: " + index);
+            s_decisions.append("Min decision sequence nr: " + index);
             s_decisions.append(System.getProperty("line.separator"));
 
             for (int j = 1; j <= decisions.size(); j++) {

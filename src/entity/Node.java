@@ -13,22 +13,16 @@ public class Node {
     private Node right; //pole na prawo (powstaje kiedy used==true)
     private Node down; //pole na dole (powstaje kiedy used==true)
     private Block block; //blok zajmujący obszar (!=null kiedy used==true)
-
-    public Node() {
-        x = 0;
-        y = 0;
-        width = 0;
-        height = 0;
-        used = false;
-        right = null;
-        down = null;
-    }
+    private int furthestX;
+    private int furthestY;
 
     public Node(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
         this.height = h;
         this.width = w;
+        this.furthestX = 0;
+        this.furthestY = 0;
         used = false;
         right = null;
         down = null;
@@ -41,6 +35,8 @@ public class Node {
         this.width = node.width;
         this.used = node.used;
         this.block = node.block;
+        this.furthestX = node.furthestX;
+        this.furthestY = node.furthestY;
 
         if (node.right != null) this.right = new Node(node.right);
         if (node.down != null) this.down = new Node(node.down);
@@ -94,4 +90,35 @@ public class Node {
         this.block = block;
     }
 
+    public void setFurthestX(int furthestX) {
+        this.furthestX = furthestX;
+    }
+
+    public void setFurthestY(int furthestY) {
+        this.furthestY = furthestY;
+    }
+
+    public int getFurthestX() {
+        return furthestX;
+    }
+
+    public int getFurthestY() {
+        return furthestY;
+    }
+
+    @Override
+    public String toString() {
+        return "Node{" +
+                "x=" + x +
+                ", y=" + y +
+                ", width=" + width +
+                ", height=" + height +
+                ", used=" + used +
+                ", right=" + right +
+                ", down=" + down +
+                ", block=" + block +
+                ", furthestX=" + furthestX +
+                ", furthestY=" + furthestY +
+                '}';
+    }
 }

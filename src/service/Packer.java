@@ -48,10 +48,13 @@ public class Packer extends Service<Void>{
 
                         if (!putOptions.isEmpty()) {
                             for (int l = 0; l < putOptions.size(); l++) { //dla każdej z opcji
+                                int furthestX = putOptions.get(l).getFurthestX();
+                                int furthestY = putOptions.get(l).getFurthestY();
                                 putBlockInNode(block, putOptions.get(l)); //w aktualnym drzewie zastosuj opcję (ustaw blok w obszarze)
+
                                 if (l != putOptions.size() - 1) { //w kazdym kroku procz ostatnim
                                     newRoots.add(new Node(roots.get(k))); //kopiuj drzewo z opcja (ustawieniem bloku w obszarze)
-                                    removeBlockFromNode(putOptions.get(l)); //cofnij zostosowanie opcji
+                                    removeBlockFromNode(putOptions.get(l), furthestX, furthestY); //cofnij zostosowanie opcji
                                 } else { //w ostatnim
                                     newRoots.add(roots.get(k)); //dodaj stare drzewo z nową opcją (użycie starego drzewa - w ostatnim kroku już nie trzeba go kopiować)
                                 }
@@ -74,13 +77,13 @@ public class Packer extends Service<Void>{
     /**
      * @return Kolekcja korzeni, dla których drzewa (ustawienia bloków) zajmują najmniejszy obszar
      */
-    public List<Node> findRootsWithMinArea() {
+    public List<Node> findRootsWithMinArea(int lastBlockId) {
         ArrayList<Node> minRoots = new ArrayList<>();
         ArrayList<Integer> areas = new ArrayList<>();
         Integer minArea = Integer.MAX_VALUE;
 
         for (int i = 0; i < roots.size(); i++) { //dla kazdego z korzeni
-            Integer area = calculateOccupiedArea(roots.get(i));
+            Integer area = calculateOccupiedArea(roots.get(i), lastBlockId);
             areas.add(area); //dodaj pole do kolekcji p�l obszar�w
 
             if (area.compareTo(minArea) < 0) minArea = area; //szukanie min obszaru
@@ -93,7 +96,6 @@ public class Packer extends Service<Void>{
         }
 
         minimumOccupiedArea = minArea;
-
 
         return minRoots;
     }
@@ -124,8 +126,8 @@ public class Packer extends Service<Void>{
      * @param node Korzeń drzewa obszaru
      * @return Pole jakie generuje obszar zajęty opisany przez drzewo
      */
-    private Integer calculateOccupiedArea(Node node) {
-        Pair<Integer> maxXmaxY = findMaxXAndY(node, new Pair<Integer>(0, 0));
+    private Integer calculateOccupiedArea(Node node, int lastBlockId) {
+        Pair<Integer> maxXmaxY = findMaxXAndY(node, new Pair<Integer>(0, 0), lastBlockId);
         return maxXmaxY.getFirst() * maxXmaxY.getSecond();
     }
 
@@ -134,27 +136,37 @@ public class Packer extends Service<Void>{
      * @param maxXmaxY aktualny wynik (rekursja)
      * @return para(maxX, maxY) maxX - wsp x najbardziej wysuniętego punktu pod względem osi X, maxY - wsp y najbardziej wysuniętego punktu pod względem osi Y
      */
-    private Pair<Integer> findMaxXAndY(Node node, Pair<Integer> maxXmaxY) {
-        if (node.isUsed()) {
-            if (maxXmaxY.getFirst() < node.getX() + node.getBlock().getWidth()) maxXmaxY.setFirst(node.getX() + node.getBlock().getWidth());
-            if (maxXmaxY.getSecond() < node.getY() + node.getBlock().getHeight())
-                maxXmaxY.setSecond(node.getY() + node.getBlock().getHeight());
-            findMaxXAndY(node.getDown(), maxXmaxY);
-            findMaxXAndY(node.getRight(), maxXmaxY);
+    private Pair<Integer> findMaxXAndY(Node node, Pair<Integer> maxXmaxY, int lastBlockId) {
+        if (node.isUsed())
+        {
+            if(node.getBlock().getId() == lastBlockId) {
+                return new Pair<Integer>(node.getFurthestX(),node.getFurthestY());
+            }
+        }
+        else {
+            return null;
         }
 
-        return maxXmaxY;
+        Pair<Integer> downResult = findMaxXAndY(node.getDown(), maxXmaxY, lastBlockId);
+
+        if(downResult != null) {
+            return downResult;
+        }
+
+        return findMaxXAndY(node.getRight(), maxXmaxY, lastBlockId);
 
     }
 
     /**
      * Cofnij ustawienie jakiegokolwiek bloku w węźle
      */
-    private void removeBlockFromNode(Node node) {
+    private void removeBlockFromNode(Node node, int furthestX, int furthestY) {
         node.setUsed(false);
         node.setBlock(null);
         node.setDown(null);
         node.setRight(null);
+        node.setFurthestX(furthestX);
+        node.setFurthestY(furthestY);
     }
 
     /**
@@ -165,6 +177,18 @@ public class Packer extends Service<Void>{
         node.setBlock(block);
         node.setDown(new Node(node.getX(), node.getY() + block.getHeight(), node.getWidth(), node.getHeight() - block.getHeight()));
         node.setRight(new Node(node.getX() + block.getWidth(), node.getY(), node.getWidth() - block.getWidth(), block.getHeight()));
+
+        if(node.getX() + node.getBlock().getWidth() > node.getFurthestX()) {
+            node.setFurthestX(node.getX() + node.getBlock().getWidth());
+        }
+        if(node.getY() + node.getBlock().getHeight() > node.getFurthestY()) {
+            node.setFurthestY(node.getY() + node.getBlock().getHeight());
+        }
+
+        node.getDown().setFurthestX(node.getFurthestX());
+        node.getRight().setFurthestX(node.getFurthestX());
+        node.getDown().setFurthestY(node.getFurthestY());
+        node.getRight().setFurthestY(node.getFurthestY());
     }
 
     /**

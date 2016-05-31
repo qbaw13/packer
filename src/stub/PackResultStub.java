@@ -19,10 +19,6 @@ public class PackResultStub {
         shapes.add(new Rectangle(0, 0, 100, 100));
         shapes.add(new Rectangle(100, 0, 50, 80));
         shapes.add(new Rectangle(150, 0, 30, 70));
-//        shapes.add(new Rectangle(100, 0, 20, 100));
-//        shapes.add(new Rectangle(100, 20, 70, 70));
-//        shapes.add(new Rectangle(100, 100, 100, 100));
-//        shapes.add(new Rectangle(200, 100, 100, 100));
 
         blocksDistribution = new BlocksDistribution(shapes);
     }

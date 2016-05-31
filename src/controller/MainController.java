@@ -54,6 +54,7 @@ public class MainController {
             mainModel.sortBlocksDescending(blocks);
             Packer packer = mainModel.packShapes(blocks);
 
+
             packer.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
                 @Override
                 public void handle(WorkerStateEvent event) {
@@ -79,6 +80,7 @@ public class MainController {
     @FXML
     public void onClear() {
         removeAllTabs();
+        console.clear();
     }
 
     @FXML
@@ -94,7 +96,7 @@ public class MainController {
             Tab tab = createTab(i);
             AnchorPane currentPane = (AnchorPane) tab.getContent();
             Rectangle bin = createBin(blocksDistributions.get(i).getWidth(), blocksDistributions.get(i).getHeight());
-            scaleBin(bin, tab.getTabPane().getWidth(), tab.getTabPane().getHeight()-20);
+            scaleBin(bin, tab.getTabPane().getWidth(), tab.getTabPane().getHeight()-18);
             currentPane.getChildren().add(bin);
             bins.add(bin);
             currentBin = bin;
@@ -117,7 +119,7 @@ public class MainController {
 
     private Tab createTab(int tabNumber) {
         AnchorPane anchorPane = new AnchorPane();
-        Tab tab = new Tab(Text.SOLUTION + " " + tabNumber, anchorPane);
+        Tab tab = new Tab(Text.SOLUTION + " " + (tabNumber+1), anchorPane);
         tab.setId(tabNumber + "");
         binTabPane.getTabs().add(tab);
 
