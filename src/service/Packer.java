@@ -47,12 +47,14 @@ public class Packer extends Service<Void>{
                         findNodes(roots.get(k), block.getWidth(), block.getHeight(), putOptions); //znajdz te opcje
 
                         if (!putOptions.isEmpty()) {
+                            Pair<Integer> currentFurthestXAndY = findMaxXAndY(roots.get(k),block.getId()-1);//znajdz najdalszy x i y z kroku poprzedniego
+
                             for (int l = 0; l < putOptions.size(); l++) { //dla każdej z opcji
 
                                 int furthestX = putOptions.get(l).getFurthestX(); //zapamiętaj najdalsze x  dla bloku
                                 int furthestY = putOptions.get(l).getFurthestY(); //zapamiętaj najdalsze y dla bloku
 
-                                putBlockInNode(block, putOptions.get(l),roots.get(k)); //w aktualnym drzewie zastosuj opcję (ustaw blok w obszarze)
+                                putBlockInNode(block, putOptions.get(l),currentFurthestXAndY); //w aktualnym drzewie zastosuj opcję (ustaw blok w obszarze)
 
                                 if (l != putOptions.size() - 1) { //w kazdym kroku procz ostatnim
                                     newRoots.add(new Node(roots.get(k))); //kopiuj drzewo z opcja (ustawieniem bloku w obszarze)
@@ -178,9 +180,7 @@ public class Packer extends Service<Void>{
     /**
      * Ustaw blok w węźle
      */
-    private void putBlockInNode(Block block, Node node, Node root) {
-
-        Pair<Integer> currentFurthestXAndY = findMaxXAndY(root,block.getId()-1);//znajdz najdalszy x i y z kroku poprzedniego
+    private void putBlockInNode(Block block, Node node, Pair<Integer> currentFurthestXAndY) {
 
         node.setUsed(true);
         node.setBlock(block);
