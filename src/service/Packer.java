@@ -48,9 +48,11 @@ public class Packer extends Service<Void>{
 
                         if (!putOptions.isEmpty()) {
                             for (int l = 0; l < putOptions.size(); l++) { //dla każdej z opcji
-                                int furthestX = putOptions.get(l).getFurthestX();
-                                int furthestY = putOptions.get(l).getFurthestY();
-                                putBlockInNode(block, putOptions.get(l)); //w aktualnym drzewie zastosuj opcję (ustaw blok w obszarze)
+
+                                int furthestX = putOptions.get(l).getFurthestX(); //zapamiętaj najdalsze x  dla bloku
+                                int furthestY = putOptions.get(l).getFurthestY(); //zapamiętaj najdalsze y dla bloku
+
+                                putBlockInNode(block, putOptions.get(l),roots.get(k)); //w aktualnym drzewie zastosuj opcję (ustaw blok w obszarze)
 
                                 if (l != putOptions.size() - 1) { //w kazdym kroku procz ostatnim
                                     newRoots.add(new Node(roots.get(k))); //kopiuj drzewo z opcja (ustawieniem bloku w obszarze)
@@ -58,6 +60,7 @@ public class Packer extends Service<Void>{
                                 } else { //w ostatnim
                                     newRoots.add(roots.get(k)); //dodaj stare drzewo z nową opcją (użycie starego drzewa - w ostatnim kroku już nie trzeba go kopiować)
                                 }
+
                             }
                         } else {
                             System.out.println("Nie dało się umieścić bloku: (" + block.getHeight() + "," + block.getHeight() + ")");
@@ -66,6 +69,7 @@ public class Packer extends Service<Void>{
 
                     roots.clear(); //wyczysc kolekcje korzeni
                     roots = newRoots; //nadpisz kolekcję nowych korzeni na miejsce starej
+
                 }
                 return null;
             }
@@ -127,33 +131,35 @@ public class Packer extends Service<Void>{
      * @return Pole jakie generuje obszar zajęty opisany przez drzewo
      */
     private Integer calculateOccupiedArea(Node node, int lastBlockId) {
-        Pair<Integer> maxXmaxY = findMaxXAndY(node, new Pair<Integer>(0, 0), lastBlockId);
+        Pair<Integer> maxXmaxY = findMaxXAndY(node, lastBlockId);
         return maxXmaxY.getFirst() * maxXmaxY.getSecond();
     }
 
     /**
      * @param node     węzeł drzewa dla którego znajudemy dwie wartości
-     * @param maxXmaxY aktualny wynik (rekursja)
-     * @return para(maxX, maxY) maxX - wsp x najbardziej wysuniętego punktu pod względem osi X, maxY - wsp y najbardziej wysuniętego punktu pod względem osi Y
+     * @param stepIndex krok programowania dynamicznego, dla ktorego wyszukujemy maxX i maxY
+     * @return para(maxX, maxY) maxX - wsp x najbardziej wysuniętego punktu pod względem osi X w kroku stepIndex, maxY - wsp y najbardziej wysuniętego punktu pod względem osi Y w kroku stepIndex
      */
-    private Pair<Integer> findMaxXAndY(Node node, Pair<Integer> maxXmaxY, int lastBlockId) {
+    private Pair<Integer> findMaxXAndY(Node node, int stepIndex) {
+        if(stepIndex==0) return new Pair<>(0,0);
+
         if (node.isUsed())
         {
-            if(node.getBlock().getId() == lastBlockId) {
-                return new Pair<Integer>(node.getFurthestX(),node.getFurthestY());
+            if(node.getBlock().getId() == stepIndex) {
+                return new Pair<>(node.getFurthestX(),node.getFurthestY());
             }
         }
         else {
             return null;
         }
 
-        Pair<Integer> downResult = findMaxXAndY(node.getDown(), maxXmaxY, lastBlockId);
+        Pair<Integer> downResult = findMaxXAndY(node.getDown(), stepIndex);
 
         if(downResult != null) {
             return downResult;
         }
 
-        return findMaxXAndY(node.getRight(), maxXmaxY, lastBlockId);
+        return findMaxXAndY(node.getRight(), stepIndex);
 
     }
 
@@ -172,23 +178,27 @@ public class Packer extends Service<Void>{
     /**
      * Ustaw blok w węźle
      */
-    private void putBlockInNode(Block block, Node node) {
+    private void putBlockInNode(Block block, Node node, Node root) {
+
+        Pair<Integer> currentFurthestXAndY = findMaxXAndY(root,block.getId()-1);//znajdz najdalszy x i y z kroku poprzedniego
+
         node.setUsed(true);
         node.setBlock(block);
         node.setDown(new Node(node.getX(), node.getY() + block.getHeight(), node.getWidth(), node.getHeight() - block.getHeight()));
         node.setRight(new Node(node.getX() + block.getWidth(), node.getY(), node.getWidth() - block.getWidth(), block.getHeight()));
 
-        if(node.getX() + node.getBlock().getWidth() > node.getFurthestX()) {
-            node.setFurthestX(node.getX() + node.getBlock().getWidth());
+
+        if(node.getX() + node.getBlock().getWidth() > currentFurthestXAndY.getFirst()) { //jeżeli aktualnie dokładany blok zwiększa szerokość zajmowanego obaszru
+            node.setFurthestX(node.getX() + node.getBlock().getWidth()); //w węźle zapisz nową szerokość
+        }else{
+            node.setFurthestX(currentFurthestXAndY.getFirst()); //w węźle zapisz szerokość z porzedniego kroku PD
         }
-        if(node.getY() + node.getBlock().getHeight() > node.getFurthestY()) {
-            node.setFurthestY(node.getY() + node.getBlock().getHeight());
+        if(node.getY() + node.getBlock().getHeight() > currentFurthestXAndY.getSecond()) { //jeżeli aktualnie dokładany blok zwiększa wysokość zajmowanego obaszru
+            node.setFurthestY(node.getY() + node.getBlock().getHeight()); //w węźle zapisz nową wysokość
+        }else{
+            node.setFurthestY(currentFurthestXAndY.getSecond()); //w węźle zapisz wysokość z porzedniego kroku PD
         }
 
-        node.getDown().setFurthestX(node.getFurthestX());
-        node.getRight().setFurthestX(node.getFurthestX());
-        node.getDown().setFurthestY(node.getFurthestY());
-        node.getRight().setFurthestY(node.getFurthestY());
     }
 
     /**
@@ -212,4 +222,5 @@ public class Packer extends Service<Void>{
     public int getMinimumOccupiedArea() {
         return minimumOccupiedArea;
     }
+
 }

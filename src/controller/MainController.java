@@ -52,6 +52,7 @@ public class MainController {
             setButtonsOnPack();
             List<Block> blocks = mainModel.getBlocks(shapesTextArea.getText());
             mainModel.sortBlocksDescending(blocks);
+            mainModel.setBlocksIds(blocks);
             Packer packer = mainModel.packShapes(blocks);
 
 
@@ -156,13 +157,15 @@ public class MainController {
     }
 
     private void addColors(List<Shape> shapes) {
-        Random rand = new Random();
+        float r = 1f;
+        float g = 0;
+        float b = 0;
         for(Shape shape : shapes) {
-            float r = rand.nextFloat();
-            float g = rand.nextFloat();
-            float b = rand.nextFloat();
             shape.setFill(new Color(r, g, b, 0.6));
             shape.setStroke(Color.BLACK);
+            r = (r + 0.08f)%1f;
+            g = (g + 0.6f)%1f;
+            b = (b + 0.2f)%1f;
         }
     }
 

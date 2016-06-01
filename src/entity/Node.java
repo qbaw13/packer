@@ -114,11 +114,11 @@ public class Node {
                 ", width=" + width +
                 ", height=" + height +
                 ", used=" + used +
-                ", right=" + right +
-                ", down=" + down +
                 ", block=" + block +
                 ", furthestX=" + furthestX +
                 ", furthestY=" + furthestY +
+                ", right=" + right +
+                ", down=" + down +
                 '}';
     }
 }

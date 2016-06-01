@@ -34,10 +34,6 @@ public class MainModel {
     public List<BlocksDistribution> fetchPackedShapes(List<Block> blocks) {
         List<BlocksDistribution> blocksDistributions = new ArrayList<>();
 
-        for (int i = 0; i < blocks.size(); i++) { //ustawianie id/kolejności w pd
-            blocks.get(i).setId(i + 1);
-        }
-
         List<Node> minRoots = packer.findRootsWithMinArea(blocks.size());
         int index = 1;
         for (Node n : minRoots) { //dla kazdego korzenia z minimalna powierzchnia
@@ -56,6 +52,7 @@ public class MainModel {
 
             index++;
         }
+
 
         return blocksDistributions;
     }
@@ -108,5 +105,11 @@ public class MainModel {
 
     public boolean checkEnteredBlocks(String text) {
         return BlocksFactory.checkBlocksCreationPossibility(text);
+    }
+
+    public void setBlocksIds(List<Block> blocks) {
+        for (int i = 0; i < blocks.size(); i++) { //ustawianie id/kolejności w pd
+            blocks.get(i).setId(i + 1);
+        }
     }
 }
